@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Personalized Agent · День 12</title>
+<style>
+  :root{--bg:#edf1f6;--grid:rgba(30,58,95,.055);--card:#fff;--ink:#13243a;--muted:#65748a;--line:#d8e0ea;--line-2:#c4d0de;--navy:#10243b;--blue:#2563eb;--blue-soft:#e9f0ff;--amber:#e08a00;--amber-soft:#fff3dc;--green:#0f8a5f;--green-soft:#e6f6ef;--red:#c73838;--red-soft:#fdecec;--mono:Consolas,"Courier New",monospace;--shadow:0 14px 38px rgba(18,40,70,.08)}
+  *{box-sizing:border-box}[hidden]{display:none!important}html,body{height:100%;margin:0}
+  body{font-family:"Segoe UI",system-ui,sans-serif;color:var(--ink);background-color:var(--bg);background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:24px 24px}
+  button,input,textarea,select{font-family:inherit}
+  .app{height:100%;display:flex;flex-direction:column}
+  .topbar{display:flex;align-items:center;gap:14px;padding:12px 20px;background:var(--navy);color:#fff;border-bottom:3px solid var(--amber)}
+  .logo{width:42px;height:42px;display:grid;place-items:center;border-radius:9px;background:var(--amber);color:#1b1200;font-family:var(--mono);font-weight:700}
+  .brand h1{margin:0;font-size:17px}.brand p{margin:2px 0 0;font-size:11px;color:#9fb2c9}.topbar .spacer{flex:1}
+  .badge{font-family:var(--mono);font-size:10.5px;padding:5px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.06);color:#c6d4e6;white-space:nowrap}
+  .badge.ok{color:#8fe3bb;border-color:rgba(143,227,187,.35)}.badge.warn{color:#ffd184;border-color:rgba(255,209,132,.35)}
+  .layout{flex:1;display:flex;min-height:0}
+  .sidebar{width:440px;flex:0 0 auto;padding:16px;border-right:1px solid var(--line);background:rgba(255,255,255,.55);overflow-y:auto;display:flex;flex-direction:column;gap:12px}
+  .block{background:var(--card);border:1px solid var(--line);border-radius:13px;box-shadow:var(--shadow);padding:14px}
+  .block h3{margin:0 0 9px;font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--muted)}
+  .hint{margin:7px 0 0;font-size:10.5px;color:var(--muted);line-height:1.45}
+  .field{display:flex;flex-direction:column;gap:3px;margin-bottom:7px}.field:last-child{margin-bottom:0}
+  .field label{font-size:9.5px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted)}
+  .field input,.field select,.field textarea{padding:7px 8px;font-size:11px;color:var(--ink);background:#fff;border:1px solid var(--line-2);border-radius:7px;outline:none}
+  .field textarea{resize:vertical;min-height:42px}.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--blue)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+  .check{display:flex;align-items:center;gap:6px;font-size:10.5px;color:var(--muted);margin:7px 0}.check input{accent-color:var(--blue)}
+  .ghost{padding:5px 8px;font-size:10px;color:var(--muted);background:#fff;border:1px solid var(--line-2);border-radius:7px;cursor:pointer}
+  .ghost:hover{color:var(--ink);border-color:var(--navy)}
+  .primary{padding:9px 12px;font-size:11px;font-weight:700;color:#fff;background:var(--blue);border:1px solid var(--blue);border-radius:8px;cursor:pointer}
+  .primary:hover{filter:brightness(1.08)}.primary:disabled,.ghost:disabled{opacity:.5;cursor:default}
+  .form-actions{display:grid;gap:7px;margin-top:8px}.form-actions .primary,.form-actions .ghost{width:100%;padding:9px 12px;font-size:11px;border-radius:8px;text-align:center}
+  .block>.ghost{width:100%;padding:9px 12px;font-size:11px;border-radius:8px;text-align:center}
+  .layer{border:1px solid var(--line);border-radius:9px;padding:9px;margin-bottom:8px;background:#f7f9fc}.layer:last-child{margin-bottom:0}
+  .layer-head{display:flex;align-items:center;gap:7px;margin-bottom:5px}.layer-name{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--blue)}.layer-meta{margin-left:auto;font-family:var(--mono);font-size:9.5px;color:var(--muted)}
+  .layer-tokens{font-family:var(--mono);font-size:10px;color:var(--muted)}
+  .items{display:flex;flex-direction:column;gap:5px;max-height:160px;overflow:auto;margin-top:7px}
+  .item{padding:6px 7px;border:1px solid var(--line);border-radius:6px;background:#fff;font-size:10.5px;line-height:1.35}
+  .item b{font-family:var(--mono);font-size:9.5px;color:var(--blue)}.item .meta{margin-top:2px;font-family:var(--mono);font-size:9px;color:var(--muted)}
+  .item .del{float:right;padding:1px 5px;font-size:9px;color:var(--red);background:#fff;border:1px solid #e7b1b1;border-radius:4px;cursor:pointer}
+  .empty-small{font-size:10.5px;color:var(--muted)}
+  .results{overflow:auto}.results table{width:100%;border-collapse:collapse;font-size:10.5px}.results th,.results td{padding:5px 4px;border-bottom:1px solid var(--line);text-align:left}.results th{color:var(--muted);font-size:9.5px;text-transform:uppercase}.results td.ok{color:var(--green);font-weight:700}.results td.no{color:var(--red)}
+  .chat-panel{flex:1;min-width:0;display:flex;flex-direction:column}
+  .chat-head{display:flex;align-items:baseline;gap:12px;padding:14px 20px;border-bottom:1px solid var(--line);background:rgba(255,255,255,.6)}.chat-head h2{margin:0;font-size:15px}.chat-head span{font-size:11px;color:var(--muted);font-family:var(--mono)}
+  .messages{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:14px}
+  .empty{margin:auto;max-width:520px;padding:40px 26px;text-align:center;color:var(--muted);font-size:13.5px;border:1.5px dashed var(--line-2);border-radius:13px;background:rgba(255,255,255,.55)}.empty strong{display:block;color:var(--ink);font-size:15px;margin-bottom:6px}
+  .turn{display:flex;flex-direction:column;gap:8px}.user-row{display:flex;justify-content:flex-end}.user-bubble{max-width:78%;padding:10px 14px;border-radius:11px 11px 3px 11px;background:var(--navy);color:#fff;font-size:13px;line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere}
+  .agent-row{display:flex;justify-content:flex-start}.agent-bubble{max-width:82%;padding:11px 14px;border:1px solid var(--line);border-radius:11px 11px 11px 3px;background:var(--card);font-size:13px;line-height:1.55;white-space:pre-wrap;overflow-wrap:anywhere;box-shadow:var(--shadow)}
+  .request{max-width:90%;border:1px solid var(--line);border-radius:8px;background:#f7f9fc}.request summary{padding:6px 9px;font-family:var(--mono);font-size:10px;color:var(--muted);cursor:pointer}.request pre{margin:0;padding:8px 9px;border-top:1px solid var(--line);font-family:var(--mono);font-size:9.5px;line-height:1.4;max-height:220px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere}
+  .turn-meta{margin-left:28px;font-family:var(--mono);font-size:9.5px;color:var(--muted)}
+  .chips{display:flex;gap:5px;flex-wrap:wrap;margin-left:28px}.chip{padding:2px 7px;border-radius:999px;border:1px solid var(--line);font-family:var(--mono);font-size:9px;background:#f7f9fc;color:var(--muted)}.chip.profile{border-color:#d7c3f5;background:#f3ecff;color:#7040a0}.chip.short{border-color:#c9d8f5;background:var(--blue-soft);color:var(--blue)}.chip.working{border-color:#f1d49a;background:var(--amber-soft);color:#9a6500}.chip.long{border-color:#b9e3d2;background:var(--green-soft);color:var(--green)}.chip.update{border-color:#e7b1b1;background:var(--red-soft);color:var(--red)}
+  .judge{max-width:82%;padding:5px 9px;border-radius:7px;font-size:11px;line-height:1.4}.judge.ok{color:var(--green);background:var(--green-soft);border:1px solid #b9e3d2}.judge.no{color:var(--red);background:var(--red-soft);border:1px solid #e7b1b1}
+  .loading{display:flex;align-items:center;gap:12px;margin:0 20px 12px;padding:12px 14px;border:1px solid var(--line);border-radius:11px;background:var(--card);box-shadow:var(--shadow)}.spinner{width:22px;height:22px;border:3px solid var(--blue-soft);border-top-color:var(--blue);border-radius:50%;animation:spin .8s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}.loading strong{display:block;font-size:13px}.loading span{font-size:11px;color:var(--muted);font-family:var(--mono)}
+  .error-box{margin:0 20px 12px;padding:10px 12px;border:1px solid #e7b1b1;background:var(--red-soft);color:#8c2020;border-radius:9px;font-size:12px;white-space:pre-wrap}
+  .composer{display:flex;gap:10px;align-items:flex-end;padding:14px 18px 16px;border-top:1px solid var(--line);background:rgba(255,255,255,.72)}.composer textarea{flex:1;resize:none;min-height:46px;max-height:160px;padding:12px 14px;font-size:13px;line-height:1.45;color:var(--ink);background:#fff;border:1px solid var(--line-2);border-radius:10px;outline:none}.composer textarea:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(37,99,235,.12)}.composer .primary{height:46px;padding:0 20px}
+  @media(max-width:980px){.layout{flex-direction:column}.sidebar{width:100%;border-right:0;border-bottom:1px solid var(--line);max-height:55vh}.chat-panel{min-height:45vh}.badge{display:none}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <div class="logo">C12</div>
+    <div class="brand"><h1>Personalized Agent</h1><p>AI Advent Challenge · День 12 · профиль + память</p></div>
+    <div class="spacer"></div>
+    <span class="badge ok" id="modelBadge">DeepSeek Flash</span>
+    <span class="badge" id="profileBadge">профиль: —</span>
+    <span class="badge" id="configBadge">ключ: —</span>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="block">
+        <h3>Профиль</h3>
+        <div class="field"><label>Активный профиль</label><select id="profileSelect"></select></div>
+        <div class="field"><label>Имя</label><input id="profileName" placeholder="например: Виктор"></div>
+        <div class="grid2">
+          <div class="field"><label>Стиль</label><select id="profileStyle"><option value="">—</option><option value="concise">кратко</option><option value="detailed">подробно</option></select></div>
+          <div class="field"><label>Формат</label><select id="profileFormat"><option value="">—</option><option value="without_code">без кода</option><option value="with_code">с кодом</option></select></div>
+        </div>
+        <div class="field"><label>Тон</label><select id="profileTone"><option value="">—</option><option value="formal">формально</option><option value="informal">неформально</option></select></div>
+        <div class="field"><label>Ограничения</label><textarea id="profileConstraints" placeholder="через запятую"></textarea></div>
+        <div class="field"><label>Предпочтения</label><textarea id="profilePreferences" placeholder="через запятую"></textarea></div>
+        <div class="form-actions"><button class="primary" id="saveProfileBtn" type="button">Сохранить профиль</button><button class="ghost" id="seedProfilesBtn" type="button">Заполнить тестовыми</button></div>
+        <p class="hint">Профиль автоматически обновляется по явным фразам вроде «кратко», «без кода», «на ты».</p>
+      </div>
+
+      <div class="block">
+        <h3>Память профиля</h3>
+        <div class="layer">
+          <div class="layer-head"><span class="layer-name">Short-term</span><span class="layer-meta" id="shortMeta">0 из 5</span></div>
+          <div class="layer-tokens" id="shortTokens">0 токенов (приблизительно)</div>
+          <button class="ghost" id="clearShortBtn" type="button">Очистить short-term</button>
+          <div class="items" id="shortItems"></div>
+        </div>
+        <div class="layer">
+          <div class="layer-head"><span class="layer-name">Working</span><span class="layer-meta" id="workingMeta">0 элементов</span></div>
+          <div class="layer-tokens" id="workingTokens">0 токенов (приблизительно)</div>
+          <button class="ghost" id="clearWorkingBtn" type="button">Очистить working</button>
+          <div class="items" id="workingItems"></div>
+        </div>
+        <div class="layer">
+          <div class="layer-head"><span class="layer-name">Long-term</span><span class="layer-meta" id="longMeta">0 элементов</span></div>
+          <div class="layer-tokens" id="longTokens">0 токенов (приблизительно)</div>
+          <button class="ghost" id="clearLongBtn" type="button">Очистить long-term</button>
+          <div class="items" id="longItems"></div>
+        </div>
+      </div>
+
+      <div class="block">
+        <h3>Сохранить в память профиля</h3>
+        <div class="grid2">
+          <div class="field"><label>Слой</label><select id="memoryLayer"><option value="working">Working</option><option value="long">Long-term</option></select></div>
+          <div class="field" id="memoryKeyField"><label>Ключ</label><input id="memoryKey" placeholder="например: бюджет"></div>
+        </div>
+        <div class="field"><label>Значение</label><textarea id="memoryValue" placeholder="например: 2,5 млн рублей"></textarea></div>
+        <label class="check"><input type="checkbox" id="memoryPinned"> pinned — всегда в промпте</label>
+        <div class="form-actions"><button class="primary" id="addMemoryBtn" type="button">Сохранить в память</button></div>
+      </div>
+
+      <div class="block">
+        <h3>Проверка персонализации</h3>
+        <div class="form-actions">
+          <button class="primary" id="compareProfilesBtn" type="button">Сравнить 3 профиля предустановленным запросом</button>
+          <button class="ghost" id="stabilityBtn" type="button">Сравнить на сценарии "10 вопросов"</button>
+        </div>
+        <div class="hint" id="testStatus"></div>
+        <div class="results" id="results">Запусти проверку.</div>
+      </div>
+      <div class="block">
+        <h3>Сброс</h3>
+        <p class="hint">Удалит профили, память и историю сообщений. Приложение вернётся в состояние первого запуска.</p>
+        <div class="form-actions"><button class="ghost" id="clearAllBtn" type="button">Очистить все данные</button></div>
+      </div>    </aside>
+
+    <section class="chat-panel">
+      <div class="chat-head"><h2>Диалог с агентом</h2><span id="chatProfileInfo">—</span></div>
+      <div class="messages" id="messages"><div class="empty"><strong>Personalized Agent готов</strong>Выбери профиль, настрой предпочтения и начни диалог.</div></div>
+      <div class="loading" id="loading" hidden><div class="spinner"></div><div><strong>Агент работает…</strong><span id="loadingMeta">0 с</span></div></div>
+      <div class="error-box" id="errorBox" hidden></div>
+      <form class="composer" id="form">
+        <textarea id="input" rows="1" placeholder="Сообщение агенту… (Enter — отправить, Shift+Enter — новая строка)" autofocus></textarea>
+        <button class="primary" id="sendBtn" type="submit">Отправить</button>
+      </form>
+    </section>
+  </div>
+</div>
+
+<script>
+  const state = { data: null, busy: false, timer: null };
+  const $ = (id) => document.getElementById(id);
+  const h = (v) => String(v == null ? "" : v).replace(/[&<>"']/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  const fmt = (n) => { if (n == null || isNaN(n)) return "—"; n = Math.round(n); return n >= 1000 ? (n / 1000).toFixed(1) + "k" : String(n); };
+  const activeProfile = () => (state.data?.state.profiles || []).find((p) => p.id === state.data.state.activeId);
+  const memory = () => activeProfile()?.memory || {};
+
+  async function api(path, options) {
+    const res = await fetch(path, options);
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || data.message || ("HTTP " + res.status));
+    return data;
+  }
+
+  async function refresh() {
+    const data = await api("/api/state");
+    state.data = data;
+    $("modelBadge").textContent = data.model || "DeepSeek Flash";
+    $("configBadge").textContent = data.configured ? "ключ: есть" : "ключ: нет";
+    $("configBadge").className = "badge " + (data.configured ? "ok" : "warn");
+    renderAll();
+  }
+
+  function renderAll() {
+    const p = activeProfile();
+    const m = memory();
+    $("profileBadge").textContent = "профиль: " + (p?.name || "—");
+    $("chatProfileInfo").textContent = p ? `${p.name} · ${p.style || "—"} / ${p.format || "—"} / ${p.tone || "—"}` : "—";
+    renderProfileSelect();
+    renderProfileFields(p);
+    renderMemory(m);
+    renderMessages(m);
+  }
+
+  function renderProfileSelect() {
+    const select = $("profileSelect");
+    const profiles = state.data?.state.profiles || [];
+    select.innerHTML = profiles.map((p) => `<option value="${h(p.id)}">${h(p.name || p.id)}</option>`).join("");
+    if (state.data?.state.activeId) select.value = state.data.state.activeId;
+  }
+
+  function renderProfileFields(p) {
+    if (!p) return;
+    $("profileName").value = p.name || "";
+    $("profileStyle").value = p.style || "";
+    $("profileFormat").value = p.format || "";
+    $("profileTone").value = p.tone || "";
+    $("profileConstraints").value = (p.constraints || []).join(", ");
+    $("profilePreferences").value = (p.preferences || []).join(", ");
+  }
+
+  function renderMemory(m) {
+    const messages = m.messages || [];
+    const shortTerm = m.shortTerm || [];
+    const turns = m.turns || [];
+    const last = turns[turns.length - 1] || {};
+    const stats = last.layerStats || {};
+    $("shortMeta").textContent = Math.min(shortTerm.length, 5) + " из 5";
+    $("workingMeta").textContent = (m.working || []).length + " элементов";
+    $("longMeta").textContent = (m.longTerm || []).length + " элементов";
+    $("shortTokens").textContent = fmt(stats.shortTokens) + " токенов (приблизительно)";
+    $("workingTokens").textContent = fmt(stats.workingTokens) + " токенов (приблизительно)";
+    $("longTokens").textContent = fmt(stats.longTokens) + " токенов (приблизительно)";
+    renderItems("shortItems", shortTerm, true);
+    renderItems("workingItems", m.working || []);
+    renderItems("longItems", m.longTerm || []);
+  }
+
+  function renderItems(id, items, isShort = false) {
+    const box = $(id);
+    if (!items.length) { box.innerHTML = `<div class="empty-small">Пока пусто.</div>`; return; }
+    box.innerHTML = items.map((item) => `<div class="item">
+      ${isShort ? "" : `<button class="del" type="button" data-delete="${h(item.id)}">×</button>`}
+      ${isShort ? `<b>${h(item.role)}</b><div class="meta">${h(item.content)}</div>` : `${item.key ? `<b>${h(item.key)}</b> · ` : ""}${h(item.value)}${item.pinned ? `<div class="meta">pinned</div>` : ""}`}
+    </div>`).join("");
+  }
+
+  function renderMessages(m) {
+    const box = $("messages");
+    const messages = m.messages || [];
+    const turns = m.turns || [];
+    if (!messages.length) { box.innerHTML = `<div class="empty"><strong>Personalized Agent готов</strong>Выбери профиль, настрой предпочтения и начни диалог.</div>`; return; }
+    const out = [];
+    for (let i = 0; i < messages.length; i += 2) {
+      const user = messages[i], assistant = messages[i + 1];
+      if (!user) continue;
+      const meta = turns[Math.floor(i / 2)] || {};
+      const ls = meta.layerStats || {};
+      const request = meta.request ? JSON.stringify(meta.request, null, 2) : "";
+      const chips = `<div class="chips">
+        <span class="chip profile">profile ≈ ${fmt(ls.profileTokens)}</span>
+        <span class="chip short">short ≈ ${fmt(ls.shortTokens)}</span>
+        <span class="chip working">working ≈ ${fmt(ls.workingTokens)}</span>
+        <span class="chip long">long ≈ ${fmt(ls.longTokens)}</span>
+        ${meta.profileUpdateUsage?.totalTokens ? `<span class="chip update">profile update ${fmt(meta.profileUpdateUsage.totalTokens)}</span>` : ""}
+      </div>`;
+      const judge = meta.profileJudge ? `<div class="judge ${meta.profileJudge.correct ? "ok" : "no"}">Судья профиля: ${meta.profileJudge.correct ? "✓ соблюдён" : "✗ нарушен"}${meta.profileJudge.reason ? " · " + h(meta.profileJudge.reason) : ""}</div>` : "";
+      out.push(`<div class="turn">
+        <div class="user-row"><div class="user-bubble">${h(user.content)}</div></div>
+        ${request ? `<details class="request"><summary>Запрос к LLM</summary><pre>${h(request)}</pre></details>` : ""}
+        ${assistant ? `<div class="agent-row"><div class="agent-bubble">${h(assistant.content)}</div></div>${judge}` : ""}
+        <div class="turn-meta">вход: ${fmt(meta.promptTokens)} · выход: ${fmt(meta.completionTokens)} · за сессию: ${fmt(meta.sessionTotal)}</div>
+        ${chips}
+      </div>`);
+    }
+    box.innerHTML = out.join("");
+    box.scrollTop = box.scrollHeight;
+  }
+
+  function setBusy(v) {
+    state.busy = v; $("sendBtn").disabled = v; $("input").disabled = v;
+    ["saveProfileBtn","seedProfilesBtn","addMemoryBtn","compareProfilesBtn","stabilityBtn","clearShortBtn","clearWorkingBtn","clearLongBtn","clearAllBtn"].forEach((id) => { if ($(id)) $(id).disabled = v; });
+    $("loading").hidden = !v;
+    if (v) { const s = Date.now(); $("loadingMeta").textContent = "0 с"; state.timer = setInterval(() => $("loadingMeta").textContent = Math.floor((Date.now() - s) / 1000) + " с", 250); }
+    else if (state.timer) { clearInterval(state.timer); state.timer = null; }
+  }
+  function showError(msg) { $("errorBox").hidden = false; $("errorBox").textContent = msg; }
+  function hideError() { $("errorBox").hidden = true; $("errorBox").textContent = ""; }
+  function updateKeyField() { const w = $("memoryLayer").value === "working"; $("memoryKeyField").hidden = w; if (w) $("memoryKey").value = ""; }
+  function splitList(v) { return v.split(",").map((x) => x.trim()).filter(Boolean); }
+
+  async function sendMessage() {
+    const message = $("input").value.trim(); if (!message || state.busy) return;
+    hideError(); $("input").value = ""; setBusy(true);
+    try { await api("/api/chat", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ message, profileId: state.data.state.activeId }) }); await refresh(); }
+    catch (err) { showError(err.message); } finally { setBusy(false); $("input").focus(); }
+  }
+
+  async function saveProfile() {
+    const p = activeProfile(); if (!p) return;
+    try { await api("/api/profile/update", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ id:p.id, name:$("profileName").value, style:$("profileStyle").value, format:$("profileFormat").value, tone:$("profileTone").value, constraints:splitList($("profileConstraints").value), preferences:splitList($("profilePreferences").value) }) }); await refresh(); }
+    catch (err) { showError(err.message); }
+  }
+
+  async function selectProfile(id) { try { await api("/api/profile/select", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ id }) }); await refresh(); } catch (err) { showError(err.message); } }
+  async function seedProfiles() { try { await api("/api/profile/seed", { method:"POST" }); await refresh(); } catch (err) { showError(err.message); } }
+  async function addMemory() {
+    const layer = $("memoryLayer").value, key = $("memoryKey").value.trim(), value = $("memoryValue").value.trim();
+    if (!value || (layer === "long" && !key)) { showError("Заполни обязательные поля."); return; }
+    try { await api("/api/memory", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ profileId:state.data.state.activeId, layer, key, value, pinned:$("memoryPinned").checked }) }); $("memoryKey").value=""; $("memoryValue").value=""; $("memoryPinned").checked=false; await refresh(); }
+    catch (err) { showError(err.message); }
+  }
+  async function deleteMemory(id) { try { await api("/api/memory/delete", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ profileId:state.data.state.activeId, id }) }); await refresh(); } catch (err) { showError(err.message); } }
+  async function clearLayer(layer) { if (!confirm("Очистить слой " + layer + "?")) return; try { await api("/api/memory/clear", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ profileId:state.data.state.activeId, layer }) }); await refresh(); } catch (err) { showError(err.message); } }
+
+  async function judgeProfile(profileId, question, answer) {
+    return api("/api/judge-profile", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ profileId, question, answer }) });
+  }
+
+  async function compareProfiles() {
+    if (state.busy) return; setBusy(true); hideError();
+    const question = "Что такое HTTP и как выглядит HTTP-запрос? Покажи пример.";
+    const rows = [];
+    try {
+      for (const id of ["p1","p2","p3"]) {
+        $("testStatus").textContent = "Сравнение: " + id;
+        await api("/api/profile/select", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ id }) });
+        await refresh();
+        await api("/api/session/clear", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ profileId:id }) });
+        await refresh();
+        const chat = await api("/api/chat", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ message:question, profileId:id }) });
+        await refresh();
+        const verdict = await judgeProfile(id, question, chat.reply);
+        const profile = state.data.state.profiles.find((p) => p.id === id) || {};
+        rows.push({ id, profile: profile.name || id, compliant: verdict.compliant, answer: chat.reply });
+      }
+      $("results").innerHTML = `<table><thead><tr><th>Профиль</th><th>Соблюдён</th></tr></thead><tbody>${rows.map((r) => `<tr><td>${h(r.profile)}</td><td class="${r.compliant ? "ok" : "no"}">${r.compliant ? "✓" : "—"}</td></tr>`).join("")}</tbody></table>`;
+      await refresh();
+    } catch (err) { showError(err.message); } finally { setBusy(false); $("testStatus").textContent = "Готово"; }
+  }
+
+  async function stabilityTest() {
+    if (state.busy) return; setBusy(true); hideError();
+    const questions = ["Что такое HTTP и как выглядит HTTP-запрос? Покажи пример.","Чем REST отличается от GraphQL?","Как работают индексы в PostgreSQL?","Как устроен JWT и где его хранить?","Что такое Docker и зачем он нужен?","Как избежать N+1 запросов?","Что такое идемпотентность API?","Как сделать rate limiting?","Что такое транзакция и уровни изоляции?","Как организовать логирование в Go-сервисе?"];
+    const ids = ["p1", "p2", "p3"];
+    const results = [];
+    try {
+      const profiles = state.data.state.profiles || [];
+      for (const id of ids) {
+        if (!profiles.some((p) => p.id === id)) throw new Error("Нет профиля " + id + ". Нажми «Заполнить тестовыми».");
+        const name = profiles.find((p) => p.id === id)?.name || id;
+        await api("/api/profile/select", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ id }) });
+        await refresh();
+        await api("/api/session/clear", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ profileId:id }) });
+        await refresh();
+        let firstViolation = 0;
+        let compliantCount = 0;
+        for (let i = 0; i < questions.length; i++) {
+          $("testStatus").textContent = `${name}: ${i + 1}/10`;
+          const chat = await api("/api/chat", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ message:questions[i], profileId:id }) });
+          await refresh();
+          const verdict = await judgeProfile(id, questions[i], chat.reply);
+          if (verdict.compliant) compliantCount++;
+          else if (firstViolation === 0) firstViolation = i + 1;
+        }
+        results.push({ id, name, compliantCount, firstViolation });
+      }
+      $("results").innerHTML = `<table><thead><tr><th>Профиль</th><th>Соблюдено</th><th>Первое нарушение</th></tr></thead><tbody>${results.map((r) => `<tr><td>${h(r.name)}</td><td class="${r.compliantCount === 10 ? "ok" : "no"}">${r.compliantCount}/10</td><td>${r.firstViolation || "—"}</td></tr>`).join("")}</tbody></table>`;
+      await refresh();
+    } catch (err) { showError(err.message); } finally { setBusy(false); $("testStatus").textContent = "Готово"; }
+  }
+
+  async function clearAllData() {
+    if (state.busy) return;
+    if (!confirm("Удалить все профили, память и историю сообщений? Приложение вернётся в состояние первого запуска.")) return;
+    setBusy(true); hideError();
+    try {
+      await api("/api/clear", { method:"POST" });
+      $("results").innerHTML = "Результатов проверки нет.";
+      $("testStatus").textContent = "";
+      await refresh();
+    } catch (err) { showError(err.message); } finally { setBusy(false); }
+  }
+  $("form").addEventListener("submit", (e) => { e.preventDefault(); sendMessage(); });
+  $("input").addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); $("form").requestSubmit(); } });
+  $("profileSelect").addEventListener("change", (e) => selectProfile(e.target.value));
+  $("saveProfileBtn").addEventListener("click", saveProfile);
+  $("seedProfilesBtn").addEventListener("click", seedProfiles);
+  $("addMemoryBtn").addEventListener("click", addMemory);
+  $("memoryLayer").addEventListener("change", updateKeyField);
+  $("clearShortBtn").addEventListener("click", () => clearLayer("short"));
+  $("clearWorkingBtn").addEventListener("click", () => clearLayer("working"));
+  $("clearLongBtn").addEventListener("click", () => clearLayer("long"));
+  $("compareProfilesBtn").addEventListener("click", compareProfiles);
+  $("stabilityBtn").addEventListener("click", stabilityTest);
+  $("clearAllBtn").addEventListener("click", clearAllData);
+  document.addEventListener("click", (e) => { const b = e.target.closest("[data-delete]"); if (b) deleteMemory(b.dataset.delete); });
+
+  updateKeyField();
+  refresh().catch((err) => showError(err.message));
+</script>
+</body>
+</html>
